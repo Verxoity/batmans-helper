@@ -20,7 +20,9 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send("❌ Missing argument. Try `!kick @user reason` or `!ban @user reason`.")
+        await ctx.send("❌ Missing argument. Try `!kick @user reason` or `!timeout @user 10 reason`.")
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send("❌ Couldn’t find that user. Make sure you mention them like `@username`.")
     elif isinstance(error, commands.CommandNotFound):
         await ctx.send("❌ Command not found. Use `!help` to see available commands.")
     elif isinstance(error, commands.MissingPermissions):
@@ -46,4 +48,14 @@ async def ban(ctx, member: discord.Member, *, reason=None):
 @commands.has_permissions(kick_members=True)
 async def kick(ctx, member: discord.Member, *, reason=None):
     await member.kick(reason=reason)
-    await ctx.send(f"👢 {member.mention
+    await ctx.send(f"👢 {member.mention} has been kicked. Reason: {reason or 'No reason provided.'}")
+
+@bot.command(name="timeout")
+@commands.has_permissions(moderate_members=True)
+async def timeout(ctx, member: discord.Member, minutes: int = 10, *, reason=None):
+    until = datetime.datetime.utcnow() + datetime.timedelta(minutes=minutes)
+    await member.timeout(until=until, reason=reason)
+    await ctx.send(f"⏳ {member.mention} has been timed out for {minutes} minutes. Reason: {reason or 'No reason provided.'}")
+
+# --- Run bot ---
+bot.run(os.getenv("TOKEN"))
