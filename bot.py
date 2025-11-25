@@ -1,26 +1,47 @@
 import discord
+from discord.ext import commands
 import os
 
-# Set up intents
+# --- Intents setup ---
 intents = discord.Intents.default()
-intents.message_content = True   # <-- critical so bot can read messages
+intents.message_content = True   # Needed to read messages
+intents.members = True           # Needed for ban/kick/mute
 
-# Create client with intents
-client = discord.Client(intents=intents)
+# --- Bot setup ---
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-@client.event
+@bot.event
 async def on_ready():
-    print(f'Logged in as {client.user}')
+    print(f"Logged in as {bot.user}")
 
-@client.event
-async def on_message(message):
-    # Ignore messages from the bot itself
-    if message.author == client.user:
-        return
+# --- Commands ---
 
-    # Respond to !ping
-    if message.content == '!ping':
-        await message.channel.send('pong')
+# Ping command
+@bot.command()
+async def ping(ctx):
+    await ctx.send("pong")
 
-# Run bot with token from environment variable
-client.run(os.getenv("TOKEN"))
+# Ban command
+@bot.command()
+@commands.has_permissions(ban_members=True)
+async def ban(ctx, member: discord.Member, *, reason=None):
+    await member.ban(reason=reason)
+    await ctx.send(f"{member} has been banned. Reason: {reason}")
+
+# Kick command
+@bot.command()
+@commands.has_permissions(kick_members=True)
+async def kick(ctx, member: discord.Member, *, reason=None):
+    await member.kick(reason=reason)
+    await ctx.send(f"{member} has been kicked. Reason: {reason}")
+
+# Mute command (timeout for 10 minutes)
+@bot.command()
+@commands.has_permissions(moderate_members=True)
+async def mute(ctx, member: discord.Member, *, reason=None):
+    duration = discord.utils.utcnow() + discord.timedelta(minutes=10)
+    await member.timeout(until=duration, reason=reason)
+    await ctx.send(f"{member} has been muted for 10 minutes. Reason: {reason}")
+
+# --- Run bot ---
+bot.run(os.getenv("TOKEN"))
