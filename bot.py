@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import os
+import datetime
 
 # --- Intents setup ---
 intents = discord.Intents.default()
@@ -24,24 +25,39 @@ async def ping(ctx):
 # Ban command
 @bot.command()
 @commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member, *, reason=None):
-    await member.ban(reason=reason)
-    await ctx.send(f"{member} has been banned. Reason: {reason}")
+async def ban(ctx, member: discord.Member, *, reason: str | None = None):
+    try:
+        await member.ban(reason=reason)
+        await ctx.send(f"{member.mention} has been banned. Reason: {reason or 'No reason provided.'}")
+    except discord.Forbidden:
+        await ctx.send("I don’t have permission to ban that user.")
+    except discord.HTTPException:
+        await ctx.send("Ban failed due to an HTTP error.")
 
 # Kick command
 @bot.command()
 @commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member, *, reason=None):
-    await member.kick(reason=reason)
-    await ctx.send(f"{member} has been kicked. Reason: {reason}")
+async def kick(ctx, member: discord.Member, *, reason: str | None = None):
+    try:
+        await member.kick(reason=reason)
+        await ctx.send(f"{member.mention} has been kicked. Reason: {reason or 'No reason provided.'}")
+    except discord.Forbidden:
+        await ctx.send("I don’t have permission to kick that user.")
+    except discord.HTTPException:
+        await ctx.send("Kick failed due to an HTTP error.")
 
 # Mute command (timeout for 10 minutes)
 @bot.command()
 @commands.has_permissions(moderate_members=True)
-async def mute(ctx, member: discord.Member, *, reason=None):
-    duration = discord.utils.utcnow() + discord.timedelta(minutes=10)
-    await member.timeout(until=duration, reason=reason)
-    await ctx.send(f"{member} has been muted for 10 minutes. Reason: {reason}")
+async def mute(ctx, member: discord.Member, *, reason: str | None = None):
+    try:
+        until = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+        await member.timeout(until=until, reason=reason)
+        await ctx.send(f"{member.mention} has been muted for 10 minutes. Reason: {reason or 'No reason provided.'}")
+    except discord.Forbidden:
+        await ctx.send("I don’t have permission to mute that user.")
+    except discord.HTTPException:
+        await ctx.send("Mute failed due to an HTTP error.")
 
 # --- Run bot ---
 bot.run(os.getenv("TOKEN"))
